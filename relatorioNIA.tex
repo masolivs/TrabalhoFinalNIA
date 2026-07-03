@@ -1,0 +1,208 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english, portuguese]{babel}
+\usepackage{graphicx}   % para incluir figuras
+\usepackage{booktabs}   % para tabelas com \toprule, \midrule, \bottomrule
+
+\begin{document}
+	
+	\title{Classificação de Gênero Musical com MLP e CNN: Uma Comparação no Dataset GTZAN}
+	
+	\author{
+		\IEEEauthorblockN{
+			Breno Back dos Santos Miranda da Silva (Matrícula: 190063980) \\
+			Leonardo Pereira Côrtes (Matrícula: 200030582) \\
+			Mariana Soares Oliveira (Matrícula: 231013663) \\
+			Matheus de Souza Fernandes (Matrícula: 231025243)
+		}
+		\vspace{0.5em}
+		\IEEEauthorblockA{\textit{Universidade de Brasília}}
+	}
+	
+	\maketitle
+	
+	% -------------------------------------------------------
+	% ABSTRACT (English)
+	% -------------------------------------------------------
+	\renewcommand{\abstractname}{Abstract}
+	\begin{abstract}
+		% [TODOS] ~150 palavras em inglês.
+		% Cobrir: objetivo, dataset, métodos (MLP e CNN), principais resultados, conclusão.
+		This paper presents a comparison between...
+	\end{abstract}
+	
+	\renewcommand{\IEEEkeywordsname}{Keywords}
+	\begin{IEEEkeywords}
+		Music genre classification, GTZAN, MLP, CNN, MFCC, spectrogram.
+	\end{IEEEkeywords}
+	
+	\vspace{1em}
+	
+	% -------------------------------------------------------
+	% RESUMO (Português)
+	% -------------------------------------------------------
+	\renewcommand{\abstractname}{Resumo}
+	\begin{abstract}
+		% [TODOS] Tradução do abstract acima.
+		Este artigo apresenta uma comparação entre...
+	\end{abstract}
+	
+	\renewcommand{\IEEEkeywordsname}{Palavras-chave}
+	\begin{IEEEkeywords}
+		Classificação de gênero musical, GTZAN, MLP, CNN, MFCC, espectrograma.
+	\end{IEEEkeywords}
+	
+	% -------------------------------------------------------
+	% I. INTRODUÇÃO
+	% [TODOS] ~300 palavras
+	% - Contexto: por que classificar gênero musical é relevante
+	% - Problema: desafios da tarefa (variabilidade intra-gênero, etc.)
+	% - Objetivo do trabalho
+	% - Estrutura do artigo (o que cada seção apresenta)
+	% -------------------------------------------------------
+	\section{Introdução}
+	
+	A classificação automática de gênero musical é uma tarefa cada vez mais importante devido ao crescimento das plataformas de \textit{streaming} e à necessidade de organizar grandes catálogos de áudio. No entanto, classificar músicas por gênero é um desafio prático, pois os estilos musicais são conceitos bastante subjetivos. Músicas de um mesmo estilo podem soar de formas muito diferentes (devido à alta variabilidade intra-gênero), e gêneros distintos podem compartilhar características acústicas parecidas, dificultando a separação das categorias.
+	
+	O objetivo deste artigo é comparar o desempenho de duas redes neurais diferentes na classificação de gêneros musicais, utilizando o dataset GTZAN~\cite{tzanetakis2002}. A primeira abordagem utiliza dados tabulares com as características acústicas do áudio para treinar um \textit{Multilayer Perceptron} (MLP). Já a segunda abordagem utiliza os espectrogramas das músicas, tratando o problema como uma tarefa de visão computacional para treinar uma Rede Neural Convolucional (CNN). Com isso, o trabalho busca avaliar qual formato de entrada e arquitetura apresenta os melhores resultados.
+	
+	O artigo está organizado da seguinte forma: a Seção II apresenta trabalhos relacionados na área; a Seção III descreve o dataset e os métodos de pré-processamento aplicados; a Seção IV detalha a construção dos modelos MLP e CNN; a Seção V mostra os resultados alcançados; a Seção VI discute o desempenho das abordagens e, por fim, a Seção VII finaliza o artigo com a conclusão.
+	
+	% -------------------------------------------------------
+	% II. TRABALHOS RELACIONADOS
+	% [PESSOA B escreve sobre MLP/MFCC; PESSOA C escreve sobre CNN/espectrograma]
+	% - Citar 3-5 artigos relevantes
+	% - O que cada trabalho fez e como o presente trabalho se diferencia
+	% -------------------------------------------------------
+	\section{Trabalhos Relacionados}
+	Diversos estudos exploraram a classificação de gênero musical...
+	
+	% -------------------------------------------------------
+	% III. DATASET E PRÉ-PROCESSAMENTO
+	% [PESSOA A escreve]
+	% - Descrever o GTZAN: 1000 clipes, 10 gêneros, 30s cada
+	% - Mencionar a limitação de data leakage (clipes da mesma música)
+	% - Descrever o split 70/15/15 estratificado, random_state=42
+	% - Descrever normalização (StandardScaler) para dados tabulares
+	% - Descrever conversão para escala de cinza 128x128 para imagens
+	% -------------------------------------------------------
+	\section{Dataset e Pré-processamento}
+	
+	\subsection{GTZAN Dataset}
+	
+	Os experimentos deste projeto utilizaram o dataset GTZAN~\cite{tzanetakis2002}, um dos bancos de dados mais conhecidos para pesquisas em processamento de áudio. O conjunto contém 1000 clipes, distribuídos igualmente em 10 gêneros musicais (100 amostras por categoria). Cada arquivo de áudio possui 30 segundos de duração.
+	
+	\subsection{Divisão dos Dados}
+	
+	Ao utilizar o GTZAN, é essencial tratar o alto risco de \textit{data leakage} (vazamento de dados). Isso ocorre porque o dataset possui diversos clipes que foram recortados de trechos diferentes de uma mesma música. Se a divisão dos dados em subconjuntos fosse totalmente aleatória, o modelo poderia ver uma parte da música no treinamento e outra parte da mesma música no teste. Isso faria a acurácia saltar artificialmente para mais de 90\%, pois a rede estaria memorizando as músicas em vez de aprender os padrões gerais de cada gênero.
+	
+	Para evitar esse problema, foi realizado um \textit{split} estratificado mantendo uma semente aleatória fixa (\texttt{random\_state=42}). Os dados foram divididos seguindo a proporção de 70\% para treinamento, 15\% para validação e 15\% para teste.
+	
+	\subsection{Pré-processamento Tabular}
+	
+	Para alimentar a rede MLP, foram utilizadas \textit{features} previamente extraídas, com foco nos coeficientes MFCCs (\textit{Mel-Frequency Cepstral Coefficients}). Colunas que não agregam informação para a classificação computacional, como o nome do arquivo e a duração da faixa, foram removidas.
+	
+	A normalização dos valores foi feita com a função \texttt{StandardScaler}. Para garantir que dados do futuro não influenciassem o aprendizado, o escalonador foi ajustado (\texttt{fit}) exclusivamente com o conjunto de treino. Só então a transformação foi aplicada para colocar os conjuntos de validação e teste na mesma escala.
+	
+	\subsection{Pré-processamento de Imagens}
+	
+	Na abordagem com a CNN, os dados de entrada foram os espectrogramas das músicas originais. Para adequar as imagens ao modelo e otimizar o processamento, elas foram convertidas para escala de cinza e redimensionadas para a resolução de $128 \times 128$ pixels.
+	
+	Os valores dos pixels foram normalizados, sendo divididos por $255.0$ para que ficassem no intervalo entre $0$ e $1$. Por fim, para que a comparação entre os dois modelos fosse cientificamente justa, a separação das imagens em treino, validação e teste utilizou os exatos mesmos índices gerados no \textit{split} dos dados tabulares.
+	
+	
+	% -------------------------------------------------------
+	% IV. METODOLOGIA
+	% -------------------------------------------------------
+	\section{Metodologia}
+	
+	% [PESSOA B escreve]
+	% - Arquitetura MLP (número de camadas, neurônios, ativação)
+	% - Hiperparâmetros finais encontrados
+	% - Processo de busca (GridSearch ou manual)
+	\subsection{Modelo Tabular — MLP}
+	O Multilayer Perceptron foi implementado com scikit-learn...
+	
+	% [PESSOA C escreve]
+	% - Arquitetura CNN camada por camada com justificativa de cada escolha
+	% - BatchNormalization, Dropout, MaxPooling
+	% - Otimizador, learning rate, EarlyStopping, ReduceLROnPlateau
+	\subsection{Modelo Visual — CNN}
+	A Convolutional Neural Network foi implementada com Keras...
+	
+	% -------------------------------------------------------
+	% V. RESULTADOS
+	% [TODOS] — montar juntos após B e C terminarem
+	% - Tabela comparativa de acurácia (val e teste) dos dois modelos
+	% - Matrizes de confusão lado a lado
+	% - F1-score por gênero
+	% -------------------------------------------------------
+	\section{Resultados}
+	
+	A Tabela~\ref{tab:resultados} apresenta a acurácia dos dois modelos no conjunto de teste.
+	
+	\begin{table}[h]
+		\centering
+		\caption{Acurácia no conjunto de teste}
+		\label{tab:resultados}
+		\begin{tabular}{lcc}
+			\toprule
+			\textbf{Modelo} & \textbf{Acurácia (val)} & \textbf{Acurácia (teste)} \\
+			\midrule
+			MLP  & 0.000 & 0.000 \\ % [PESSOA B preenche]
+			CNN  & 0.000 & 0.000 \\ % [PESSOA C preenche]
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	% Incluir matrizes de confusão
+	% \begin{figure}[h]
+		%     \centering
+		%     \includegraphics[width=0.45\columnwidth]{confusion_matrix_mlp.png}
+		%     \includegraphics[width=0.45\columnwidth]{confusion_matrix_cnn.png}
+		%     \caption{Matrizes de confusão: MLP (esquerda) e CNN (direita).}
+		%     \label{fig:confusion}
+		% \end{figure}
+	
+	% -------------------------------------------------------
+	% VI. DISCUSSÃO
+	% [TODOS]
+	% - Por que um modelo superou o outro?
+	% - Quais gêneros foram mais confundidos e por quê?
+	% - Limitações (data leakage, tamanho do dataset)
+	% -------------------------------------------------------
+	\section{Discussão}
+	Os resultados indicam que...
+	
+	% -------------------------------------------------------
+	% VII. CONCLUSÃO
+	% [TODOS] ~200 palavras
+	% - Resumo do que foi feito
+	% - Principal achado
+	% - Sugestões de trabalhos futuros
+	% -------------------------------------------------------
+	\section{Conclusão}
+	Este trabalho comparou duas abordagens para classificação de gênero musical...
+	
+	% -------------------------------------------------------
+	% REFERÊNCIAS
+	% Formato ABNT adaptado para IEEEtran
+	% -------------------------------------------------------
+	\begin{thebibliography}{99}
+		
+		\bibitem{tzanetakis2002}
+		TZANETAKIS, G.; COOK, P. Musical genre classification of audio signals.
+		\textit{IEEE Transactions on Speech and Audio Processing}, v. 10, n. 5, p. 293--302, 2002.
+		
+		\bibitem{ref2}
+		% [PESSOA B adiciona referência sobre MLP/MFCC]
+		SOBRENOME, Nome. Título do artigo. \textit{Nome da Revista}, Ano.
+		
+		\bibitem{ref3}
+		% [PESSOA C adiciona referência sobre CNN/espectrograma]
+		SOBRENOME, Nome. Título do artigo. \textit{Nome da Revista}, Ano.
+		
+	\end{thebibliography}
+	
+\end{document}
