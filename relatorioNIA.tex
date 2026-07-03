@@ -151,7 +151,7 @@
 	
 	A Tabela~\ref{tab:resultados} apresenta a acurácia dos dois modelos no conjunto de teste.
 
-  A CNN atingiu $0{,}70$ de acurácia na validação e $0{,}60$ no teste. A Figura~\ref{fig:cnn_curves} apresenta as curvas de treinamento, nas quais se observam a convergência estável do modelo e um leve \textit{overfitting} a partir da vigésima época, comportamento esperado dado o tamanho reduzido do conjunto de treino. A Figura~\ref{fig:cnn_cm} mostra a matriz de confusão na validação: os gêneros \textit{metal} e \textit{classical} foram os mais bem classificados (F1 de $0{,}93$ e $0{,}82$, respectivamente), enquanto \textit{rock} e \textit{country} concentraram os maiores erros (F1 de $0{,}53$ e $0{,}54$), sendo frequentemente confundidos entre si e com \textit{jazz}.
+  A CNN atingiu $0{,}64$ de acurácia na validação e $0{,}51$ no teste. A Figura~\ref{fig:cnn_curves} apresenta as curvas de treinamento, nas quais se observam a convergência estável do modelo e um leve \textit{overfitting} a partir da vigésima época, comportamento esperado dado o tamanho reduzido do conjunto de treino. A Figura~\ref{fig:cnn_cm} mostra a matriz de confusão na validação: os gêneros \textit{metal} e \textit{classical} foram os mais bem classificados (F1 de $0{,}93$ e $0{,}82$, respectivamente), enquanto \textit{rock} e \textit{country} concentraram os maiores erros (F1 de $0{,}53$ e $0{,}54$), sendo frequentemente confundidos entre si e com \textit{jazz}.
 
   \begin{figure}[h]
     \centering
@@ -176,7 +176,7 @@
 			\textbf{Modelo} & \textbf{Acurácia (val)} & \textbf{Acurácia (teste)} \\
 			\midrule
 			MLP  & 0.000 & 0.000 \\ % [PESSOA B preenche]
-			CNN  & 0.70 & 0.60 \\ % CNN sem BatchNorm
+			CNN  & 0.64 & 0.51 \\ % CNN no Colab (localmente foi 0.70 e 0.60)
 			\bottomrule
 		\end{tabular}
 	\end{table}
