@@ -4,7 +4,7 @@
 \usepackage[english, portuguese]{babel}
 \usepackage{graphicx}   % para incluir figuras
 \usepackage{booktabs}   % para tabelas com \toprule, \midrule, \bottomrule
-\graphicspath{{resultados/}}  % figuras geradas ficam em resultados/
+\graphicspath{{./}{resultados/}}  % procura figuras na raiz e em resultados/
 
 \begin{document}
 	
@@ -151,7 +151,7 @@
 	
 	A Tabela~\ref{tab:resultados} apresenta a acurácia dos dois modelos no conjunto de teste.
 
-  A CNN atingiu $0{,}64$ de acurácia na validação e $0{,}51$ no teste. A Figura~\ref{fig:cnn_curves} apresenta as curvas de treinamento, nas quais se observam a convergência estável do modelo e um leve \textit{overfitting} a partir da vigésima época, comportamento esperado dado o tamanho reduzido do conjunto de treino. A Figura~\ref{fig:cnn_cm} mostra a matriz de confusão na validação: os gêneros \textit{metal} e \textit{classical} foram os mais bem classificados (F1 de $0{,}93$ e $0{,}82$, respectivamente), enquanto \textit{rock} e \textit{country} concentraram os maiores erros (F1 de $0{,}53$ e $0{,}54$), sendo frequentemente confundidos entre si e com \textit{jazz}.
+  A CNN atingiu $0{,}64$ de acurácia na validação e $0{,}51$ no teste. A Figura~\ref{fig:cnn_curves} apresenta as curvas de treinamento, nas quais se observam a convergência estável do modelo e um leve \textit{overfitting} a partir da vigésima época, comportamento esperado dado o tamanho reduzido do conjunto de treino. A Figura~\ref{fig:cnn_cm} mostra a matriz de confusão na validação: o gênero \textit{metal} foi o mais bem classificado (F1 de $0{,}93$), seguido de \textit{classical} e \textit{hiphop} (ambos com F1 de $0{,}80$), enquanto \textit{rock} e \textit{country} concentraram os maiores erros (F1 de $0{,}32$ e $0{,}50$, respectivamente), refletindo a maior sobreposição de suas características com as dos demais gêneros.
 
   \begin{figure}[h]
     \centering
@@ -182,13 +182,13 @@
 	\end{table}
 	
 	% Incluir matrizes de confusão
-	\begin{figure}[h]
-      \centering
-     % \includegraphics[width=0.45\columnwidth]{confusion_matrix_mlp.png}
-      \includegraphics[width=0.45\columnwidth]{confusion_matrix_cnn.png}
-      \caption{Matrizes de confusão: MLP (esquerda) e CNN (direita).}
-      \label{fig:confusion}
-	\end{figure}
+	% \begin{figure}[h]
+  %     \centering
+  %     \includegraphics[width=0.45\columnwidth]{confusion_matrix_mlp.png}
+  %     \includegraphics[width=0.45\columnwidth]{confusion_matrix_cnn.png}
+  %     \caption{Matrizes de confusão: MLP (esquerda) e CNN (direita).}
+  %     \label{fig:confusion}
+	% \end{figure}
 	
 	% -------------------------------------------------------
 	% VI. DISCUSSÃO
