@@ -4,6 +4,7 @@
 \usepackage[english, portuguese]{babel}
 \usepackage{graphicx}   % para incluir figuras
 \usepackage{booktabs}   % para tabelas com \toprule, \midrule, \bottomrule
+\graphicspath{{resultados/}}  % figuras geradas ficam em resultados/
 
 \begin{document}
 	
@@ -76,7 +77,7 @@
 	% - O que cada trabalho fez e como o presente trabalho se diferencia
 	% -------------------------------------------------------
 	\section{Trabalhos Relacionados}
-	Diversos estudos exploraram a classificação de gênero musical...
+	Diversos estudos exploraram a classificação de gênero musical utilizando diferentes representações de entrada. Na abordagem visual, Costa et al.~\cite{costa2017} avaliaram redes neurais convolucionais aplicadas a espectrogramas para classificação musical, demonstrando que tratar o áudio como uma imagem e delegar a extração de características à própria rede pode superar descritores acústicos projetados manualmente. O presente trabalho segue essa linha na abordagem CNN e a contrasta diretamente com um modelo tabular (MLP) treinado sobre descritores MFCC.
 	
 	% -------------------------------------------------------
 	% III. DATASET E PRÉ-PROCESSAMENTO
@@ -121,15 +122,23 @@
 	% - Arquitetura MLP (número de camadas, neurônios, ativação)
 	% - Hiperparâmetros finais encontrados
 	% - Processo de busca (GridSearch ou manual)
-	\subsection{Modelo Tabular — MLP}
+	\subsection{Modelo Tabular - MLP}
 	O Multilayer Perceptron foi implementado com scikit-learn...
 	
 	% [PESSOA C escreve]
 	% - Arquitetura CNN camada por camada com justificativa de cada escolha
 	% - BatchNormalization, Dropout, MaxPooling
 	% - Otimizador, learning rate, EarlyStopping, ReduceLROnPlateau
-	\subsection{Modelo Visual — CNN}
-	A Convolutional Neural Network foi implementada com Keras...
+	\subsection{Modelo Visual - CNN}
+	A rede convolucional foi implementada em Keras e recebe como entrada os espectrogramas em escala de cinza de dimensão $128 \times 128 \times 1$. A arquitetura é composta por três blocos convolucionais seguidos de uma cabeça de classificação densa.
+
+  Cada bloco convolucional contém uma camada \texttt{Conv2D} com filtros $3 \times 3$ e ativação ReLU (com \textit{padding} do tipo \textit{same}, que preserva a dimensão espacial), seguida de \texttt{MaxPooling2D} $2 \times 2$ e \texttt{Dropout} de $0{,}25$. O número de filtros cresce a cada bloco ($32$, $64$ e $128$), permitindo que a rede aprenda uma hierarquia de padrões: das texturas locais do espectrograma, nos primeiros blocos, a padrões mais abstratos nos blocos finais. O \textit{pooling} reduz progressivamente a resolução (de $128$ para $16$) e agrega invariância a pequenos deslocamentos, enquanto o \textit{dropout} atua como regularização, importante dado o número reduzido de amostras de treino.
+
+  Após os blocos convolucionais, os mapas de características são achatados (\texttt{Flatten}) e processados por uma camada \texttt{Dense} de $256$ neurônios com ativação ReLU, um \texttt{Dropout} mais agressivo de $0{,}5$ e, por fim, uma camada \texttt{Dense} de $10$ neurônios com ativação \textit{softmax}, que produz a distribuição de probabilidade sobre os gêneros.
+
+  O treinamento utilizou o otimizador Adam (\textit{learning rate} inicial de $10^{-3}$) e a função de perda \textit{sparse categorical crossentropy}, com \textit{batches} de $32$ amostras por até $50$ épocas. Dois \textit{callbacks} controlaram o processo: o \textit{EarlyStopping} (monitorando a acurácia de validação, com paciência de $10$ épocas e restauração dos melhores pesos), para conter o \textit{overfitting}, e o \textit{ReduceLROnPlateau} (reduzindo o \textit{learning rate} pela metade após $5$ épocas sem melhora na perda de validação), permitindo um ajuste mais fino na fase final do treino.
+
+  \textbf{Sobre a normalização em lote.} A arquitetura originalmente proposta incluía uma camada de \textit{Batch Normalization}~\cite{ioffe2015} após cada convolução. Na prática, entretanto, essa configuração fez o treinamento estagnar em acurácia equivalente ao acaso ($\approx 10\%$ para dez classes). O comportamento é consistente com uma limitação conhecida da técnica em cenários de poucos dados: as estatísticas móveis de média e variância, usadas na inferência, não convergem com o número reduzido de \textit{batches} por época, de modo que a normalização aplicada na validação diverge da aplicada no treino. A remoção das camadas de \textit{Batch Normalization}, mantendo o restante da arquitetura, foi suficiente para estabilizar o treinamento e alcançar os resultados reportados.
 	
 	% -------------------------------------------------------
 	% V. RESULTADOS
@@ -141,6 +150,22 @@
 	\section{Resultados}
 	
 	A Tabela~\ref{tab:resultados} apresenta a acurácia dos dois modelos no conjunto de teste.
+
+  A CNN atingiu $0{,}70$ de acurácia na validação e $0{,}60$ no teste. A Figura~\ref{fig:cnn_curves} apresenta as curvas de treinamento, nas quais se observam a convergência estável do modelo e um leve \textit{overfitting} a partir da vigésima época, comportamento esperado dado o tamanho reduzido do conjunto de treino. A Figura~\ref{fig:cnn_cm} mostra a matriz de confusão na validação: os gêneros \textit{metal} e \textit{classical} foram os mais bem classificados (F1 de $0{,}93$ e $0{,}82$, respectivamente), enquanto \textit{rock} e \textit{country} concentraram os maiores erros (F1 de $0{,}53$ e $0{,}54$), sendo frequentemente confundidos entre si e com \textit{jazz}.
+
+  \begin{figure}[h]
+    \centering
+    \includegraphics[width=\columnwidth]{cnn_training_curves.png}
+    \caption{Curvas de acurácia e perda por época da CNN (treino e validação).}
+    \label{fig:cnn_curves}
+  \end{figure}
+
+  \begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{confusion_matrix_cnn.png}
+    \caption{Matriz de confusão da CNN no conjunto de validação.}
+    \label{fig:cnn_cm}
+  \end{figure}
 	
 	\begin{table}[h]
 		\centering
@@ -151,19 +176,19 @@
 			\textbf{Modelo} & \textbf{Acurácia (val)} & \textbf{Acurácia (teste)} \\
 			\midrule
 			MLP  & 0.000 & 0.000 \\ % [PESSOA B preenche]
-			CNN  & 0.000 & 0.000 \\ % [PESSOA C preenche]
+			CNN  & 0.70 & 0.60 \\ % CNN sem BatchNorm
 			\bottomrule
 		\end{tabular}
 	\end{table}
 	
 	% Incluir matrizes de confusão
-	% \begin{figure}[h]
-		%     \centering
-		%     \includegraphics[width=0.45\columnwidth]{confusion_matrix_mlp.png}
-		%     \includegraphics[width=0.45\columnwidth]{confusion_matrix_cnn.png}
-		%     \caption{Matrizes de confusão: MLP (esquerda) e CNN (direita).}
-		%     \label{fig:confusion}
-		% \end{figure}
+	\begin{figure}[h]
+      \centering
+     % \includegraphics[width=0.45\columnwidth]{confusion_matrix_mlp.png}
+      \includegraphics[width=0.45\columnwidth]{confusion_matrix_cnn.png}
+      \caption{Matrizes de confusão: MLP (esquerda) e CNN (direita).}
+      \label{fig:confusion}
+	\end{figure}
 	
 	% -------------------------------------------------------
 	% VI. DISCUSSÃO
@@ -199,9 +224,11 @@
 		% [PESSOA B adiciona referência sobre MLP/MFCC]
 		SOBRENOME, Nome. Título do artigo. \textit{Nome da Revista}, Ano.
 		
-		\bibitem{ref3}
-		% [PESSOA C adiciona referência sobre CNN/espectrograma]
-		SOBRENOME, Nome. Título do artigo. \textit{Nome da Revista}, Ano.
+		\bibitem{costa2017}
+		COSTA, Y. M. G.; OLIVEIRA, L. S.; SILLA JR., C. N. An evaluation of convolutional neural networks for music classification using spectrograms. \textit{Applied Soft Computing}, v. 52, p. 28--38, 2017.
+
+		\bibitem{ioffe2015}
+		IOFFE, S.; SZEGEDY, C. Batch normalization: Accelerating deep network training by reducing internal covariate shift. In: \textit{International Conference on Machine Learning (ICML)}, 2015. p. 448--456.
 		
 	\end{thebibliography}
 	
