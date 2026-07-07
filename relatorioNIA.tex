@@ -4,210 +4,273 @@
 \usepackage[english, portuguese]{babel}
 \usepackage{graphicx}   % para incluir figuras
 \usepackage{booktabs}   % para tabelas com \toprule, \midrule, \bottomrule
+\usepackage{placeins}   % fornece \FloatBarrier, impede que figuras "vazem" para seções seguintes
 \graphicspath{{./}{resultados/}}  % procura figuras na raiz e em resultados/
 
 \begin{document}
-    
-    \title{Classificação de Gênero Musical com MLP e CNN: Uma Comparação no Dataset GTZAN}
-    
-    \author{
-        \IEEEauthorblockN{
-            Breno Back dos Santos Miranda da Silva (Matrícula: 190063980) \\
-            Leonardo Pereira Côrtes (Matrícula: 200030582) \\
-            Mariana Soares Oliveira (Matrícula: 231013663) \\
-            Matheus de Souza Fernandes (Matrícula: 231025243)
-        }
-        \vspace{0.5em}
-        \IEEEauthorblockA{\textit{Universidade de Brasília}}
-    }
-    
-    \maketitle
-    
-    % -------------------------------------------------------
-    % ABSTRACT (English)
-    % -------------------------------------------------------
-    \renewcommand{\abstractname}{Abstract}
-    \begin{abstract}
-        % [TODOS] ~150 palavras em inglês.
-        % Cobrir: objetivo, dataset, métodos (MLP e CNN), principais resultados, conclusão.
-        This paper presents a comparison between...
-    \end{abstract}
-    
-    \renewcommand{\IEEEkeywordsname}{Keywords}
-    \begin{IEEEkeywords}
-        Music genre classification, GTZAN, MLP, CNN, MFCC, spectrogram.
-    \end{IEEEkeywords}
-    
-    \vspace{1em}
-    
-    % -------------------------------------------------------
-    % RESUMO (Português)
-    % -------------------------------------------------------
-    \renewcommand{\abstractname}{Resumo}
-    \begin{abstract}
-        % [TODOS] Tradução do abstract acima.
-        Este artigo apresenta uma comparação entre...
-    \end{abstract}
-    
-    \renewcommand{\IEEEkeywordsname}{Palavras-chave}
-    \begin{IEEEkeywords}
-        Classificação de gênero musical, GTZAN, MLP, CNN, MFCC, espectrograma.
-    \end{IEEEkeywords}
-    
-    % -------------------------------------------------------
-    % I. INTRODUÇÃO
-    % -------------------------------------------------------
-    \section{Introdução}
-    
-    A classificação automática de gênero musical é uma tarefa cada vez mais importante devido ao crescimento das plataformas de \textit{streaming} e à necessidade de organizar grandes catálogos de áudio. No entanto, classificar músicas por gênero é um desafio prático, pois os estilos musicais são conceitos bastante subjetivos. Músicas de um mesmo estilo podem soar de formas muito diferentes (devido à alta variabilidade intra-gênero), e gêneros distintos podem compartilhar características acústicas parecidas, dificultando a separação das categorias.
-    
-    O objetivo deste artigo é comparar o desempenho de duas redes neurais diferentes na classificação de gêneros musicais, utilizando o dataset GTZAN~\cite{tzanetakis2002}. A primeira abordagem utiliza dados tabulares com as características acústicas do áudio para treinar um \textit{Multilayer Perceptron} (MLP). Já a segunda abordagem utiliza os espectrogramas das músicas, tratando o problema como uma tarefa de visão computacional para treinar uma Rede Neural Convolucional (CNN). Com isso, o trabalho busca avaliar qual formato de entrada e arquitetura apresenta os melhores resultados.
-    
-    O artigo está organizado da seguinte forma: a Seção II apresenta trabalhos relacionados na área; a Seção III descreve o dataset e os métodos de pré-processamento aplicados; a Seção IV detalha a construção dos modelos MLP e CNN; a Seção V mostra os resultados alcançados; a Seção VI discute o desempenho das abordagens e, por fim, a Seção VII finaliza o artigo com a conclusão.
-    
-    % -------------------------------------------------------
-    % II. TRABALHOS RELACIONADOS
-    % -------------------------------------------------------
-    \section{Trabalhos Relacionados}
-    Diversos estudos exploraram a classificação de gênero musical utilizando diferentes representações de entrada. Para a extração de características acústicas tabulares, os coeficientes MFCC (\textit{Mel-Frequency Cepstral Coefficients}) são amplamente consolidados na literatura de processamento de áudio. Logan~\cite{logan2000} demonstrou a eficácia dos MFCCs para a modelagem musical, destacando sua capacidade de capturar a envoltória espectral do som de forma análoga à percepção auditiva humana, tornando-se o padrão de entrada para redes como o \textit{Multilayer Perceptron} (MLP) em tarefas de áudio.
-    
-    Na abordagem visual, Costa et al.~\cite{costa2017} avaliaram redes neurais convolucionais aplicadas a espectrogramas para classificação musical, demonstrando que tratar o áudio como uma imagem e delegar a extração de características à própria rede pode superar descritores acústicos projetados manualmente. O presente trabalho segue essa linha na abordagem CNN e a contrasta diretamente com um modelo tabular (MLP) treinado sobre descritores MFCC.
-    
-    % -------------------------------------------------------
-    % III. DATASET E PRÉ-PROCESSAMENTO
-    % -------------------------------------------------------
-    \section{Dataset e Pré-processamento}
-    
-    \subsection{GTZAN Dataset}
-    
-    Os experimentos deste projeto utilizaram o dataset GTZAN~\cite{tzanetakis2002}, um dos bancos de dados mais conhecidos para pesquisas em processamento de áudio. O conjunto contém 1000 clipes, distribuídos igualmente em 10 gêneros musicais (100 amostras por categoria). Cada arquivo de áudio possui 30 segundos de duração.
-    
-    \subsection{Divisão dos Dados}
-    
-    Ao utilizar o GTZAN, é essencial tratar o alto risco de \textit{data leakage} (vazamento de dados). Isso ocorre porque o dataset possui diversos clipes que foram recortados de trechos diferentes de uma mesma música. Se a divisão dos dados em subconjuntos fosse totalmente aleatória, o modelo poderia ver uma parte da música no treinamento e outra parte da mesma música no teste. Isso faria a acurácia saltar artificialmente para mais de 90\%, pois a rede estaria memorizando as músicas em vez de aprender os padrões gerais de cada gênero.
-    
-    Para evitar esse problema, foi realizado um \textit{split} estratificado mantendo uma semente aleatória fixa (\texttt{random\_state=42}). Os dados foram divididos seguindo a proporção de 70\% para treinamento, 15\% para validação e 15\% para teste.
-    
-    \subsection{Pré-processamento Tabular}
-    
-    Para alimentar a rede MLP, foram utilizadas \textit{features} previamente extraídas, com foco nos coeficientes MFCCs (\textit{Mel-Frequency Cepstral Coefficients}). Colunas que não agregam informação para a classificação computacional, como o nome do arquivo e a duração da faixa, foram removidas.
-    
-    A normalização dos valores foi feita com a função \texttt{StandardScaler}. Para garantir que dados do futuro não influenciassem o aprendizado, o escalonador foi ajustado (\texttt{fit}) exclusivamente com o conjunto de treino. Só então a transformação foi aplicada para colocar os conjuntos de validação e teste na mesma escala.
-    
-    \subsection{Pré-processamento de Imagens}
-    
-    Na abordagem com a CNN, os dados de entrada foram os espectrogramas das músicas originais. Para adequar as imagens ao modelo e otimizar o processamento, elas foram convertidas para escala de cinza e redimensionadas para a resolução de 128 \times 128 pixels.
-    
-    Os valores dos pixels foram normalizados, sendo divididos por 255.0 para que ficassem no intervalo entre 0 e 1. Por fim, para que a comparação entre os dois modelos fosse cientificamente justa, a separação das imagens em treino, validação e teste utilizou os exatos mesmos índices gerados no \textit{split} dos dados tabulares.
-    
-    
-    % -------------------------------------------------------
-    % IV. METODOLOGIA
-    % -------------------------------------------------------
-    \section{Metodologia}
-    
-    \subsection{Modelo Tabular - MLP}
-    A abordagem tabular foi desenvolvida utilizando a biblioteca \texttt{scikit-learn}. A arquitetura do \textit{Multilayer Perceptron} (MLP) baseou-se diretamente nas \textit{features} MFCCs extraídas. Para encontrar a arquitetura ideal e mitigar os efeitos de \textit{overfitting}, foi implementada uma busca de hiperparâmetros utilizando a técnica \texttt{RandomizedSearchCV} com validação cruzada estratificada (cv=5) e 20 iterações. O espaço de busca abrangeu variações na topologia da rede (de uma a três camadas ocultas), funções de ativação (ReLU e Tanh), taxa de aprendizado inicial e o fator de regularização L2 (\textit{alpha}).
-    
-    A configuração de melhor desempenho consistiu em uma arquitetura enxuta, possuindo uma única camada oculta com 128 neurônios, função de ativação ReLU, taxa de aprendizado inicial de 0,01 e um termo de regularização \textit{alpha} de 0,0001, operando sob o otimizador Adam. Além da simplicidade arquitetural, a técnica de \textit{Early Stopping} foi fundamental: o treinamento foi configurado para ser interrompido caso a perda (\textit{loss}) no conjunto de validação não apresentasse melhora por 20 épocas consecutivas. Essa estratégia demonstrou-se altamente eficaz para interromper o aprendizado antes que a rede passasse a memorizar os dados de treino, favorecendo a generalização.
-    
-    \subsection{Modelo Visual - CNN}
-    A rede convolucional foi implementada em Keras e recebe como entrada os espectrogramas em escala de cinza de dimensão 128 \times 128 \times 1. A arquitetura é composta por três blocos convolucionais seguidos de uma cabeça de classificação densa.
-
-    Cada bloco convolucional contém uma camada \texttt{Conv2D} com filtros 3 \times 3 e ativação ReLU (com \textit{padding} do tipo \textit{same}, que preserva a dimensão espacial), seguida de \texttt{MaxPooling2D} 2 \times 2 e \texttt{Dropout} de 0,25. O número de filtros cresce a cada bloco (32, 64 e 128), permitindo que a rede aprenda uma hierarquia de padrões: das texturas locais do espectrograma, nos primeiros blocos, a padrões mais abstratos nos blocos finais. O \textit{pooling} reduz progressivamente a resolução (de 128 para 16) e agrega invariância a pequenos deslocamentos, enquanto o \textit{dropout} atua como regularização, importante dado o número reduzido de amostras de treino.
-
-    Após os blocos convolucionais, os mapas de características são achatados (\texttt{Flatten}) e processados por uma camada \texttt{Dense} de 256 neurônios com ativação ReLU, um \texttt{Dropout} mais agressivo de 0,5 e, por fim, uma camada \texttt{Dense} de 10 neurônios com ativação \textit{softmax}, que produz a distribuição de probabilidade sobre os gêneros.
-
-    O treinamento utilizou o otimizador Adam (\textit{learning rate} inicial de $10^{-3}$) e a função de perda \textit{sparse categorical crossentropy}, com \textit{batches} de 32 amostras por até 50 épocas. Dois \textit{callbacks} controlaram o processo: o \textit{EarlyStopping} (monitorando a acurácia de validação, com paciência de 10 épocas e restauração dos melhores pesos), para conter o \textit{overfitting}, e o \textit{ReduceLROnPlateau} (reduzindo o \textit{learning rate} pela metade após 5 épocas sem melhora na perda de validação), permitindo um ajuste mais fino na fase final do treino.
-
-    \textbf{Sobre a normalização em lote.} A arquitetura originalmente proposta incluía uma camada de \textit{Batch Normalization}~\cite{ioffe2015} após cada convolução. Na prática, entretanto, essa configuração fez o treinamento estagnar em acurácia equivalente ao acaso ($\approx 10\%$ para dez classes). O comportamento é consistente com uma limitação conhecida da técnica em cenários de poucos dados: as estatísticas móveis de média e variância, usadas na inferência, não convergem com o número reduzido de \textit{batches} por época, de modo que a normalização aplicada na validação diverge da aplicada no treino. A remoção das camadas de \textit{Batch Normalization}, mantendo o restante da arquitetura, foi suficiente para estabilizar o treinamento e alcançar os resultados reportados.
-    
-    % -------------------------------------------------------
-    % V. RESULTADOS
-    % -------------------------------------------------------
-    \section{Resultados}
-    
-    A Tabela~\ref{tab:resultados} apresenta a acurácia global dos dois modelos desenvolvidos. 
-    
-    Em relação à abordagem tabular, o modelo MLP apresentou um treinamento estável e eficiente. A Figura~\ref{fig:mlp_curves} ilustra a queda acentuada da função de custo (\textit{loss}) de treinamento e a ascensão da acurácia de validação, que atingiu seu ápice próximo à 20ª época (cerca de 70\%). O mecanismo de \textit{Early Stopping} interrompeu o treinamento em torno da 32ª época, garantindo que o modelo retivesse sua capacidade de generalização máxima antes de apresentar sobreajuste severo. A análise da Figura~\ref{fig:mlp_cm} reforça a precisão da rede: gêneros com assinaturas acústicas peculiares, como \textit{classical} e \textit{jazz}, foram amplamente reconhecidos, chegando a 100\% de acertos no caso da música clássica. As maiores sobreposições ocorreram entre \textit{hiphop} e \textit{reggae} (4 falsos preditivos), e \textit{rock} e \textit{disco} (3 falsos preditivos), evidenciando a limitação dos MFCCs puros em discernir certos padrões rítmicos percussivos semelhantes.
-
-    A CNN atingiu 0,64 de acurácia na validação e 0,51 no teste. A Figura~\ref{fig:cnn_curves} apresenta as curvas de treinamento, nas quais se observam a convergência estável do modelo e um leve \textit{overfitting} a partir da vigésima época, comportamento esperado dado o tamanho reduzido do conjunto de treino. A Figura~\ref{fig:cnn_cm} mostra a matriz de confusão na validação: o gênero \textit{metal} foi o mais bem classificado (F1 de 0,93), seguido de \textit{classical} e \textit{hiphop} (ambos com F1 de 0,80), enquanto \textit{rock} e \textit{country} concentraram os maiores erros (F1 de 0,32 e 0,50, respectivamente), refletindo a maior sobreposição de suas características com as dos demais gêneros.
-    
-    \begin{table}[h]
-        \centering
-        \caption{Acurácia nos conjuntos de Validação e Teste}
-        \label{tab:resultados}
-        \begin{tabular}{lcc}
-            \toprule
-            \textbf{Modelo} & \textbf{Acurácia (val)} & \textbf{Acurácia (teste)} \\
-            \midrule
-            MLP  & 0.76 & 0.77 \\
-            CNN  & 0.64 & 0.51 \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
-
-    \begin{figure}[h]
-        \centering
-        \includegraphics[width=\columnwidth]{mlp_training_curves.png}
-        \caption{Curvas de perda (treino) e acurácia (validação) por época para o modelo tabular MLP.}
-        \label{fig:mlp_curves}
-    \end{figure}
-
-    \begin{figure}[h]
-        \centering
-        \includegraphics[width=0.9\columnwidth]{confusion_matrix_mlp.png}
-        \caption{Matriz de confusão do MLP no conjunto de validação.}
-        \label{fig:mlp_cm}
-    \end{figure}
-
-    \begin{figure}[h]
-        \centering
-        \includegraphics[width=\columnwidth]{cnn_training_curves.png}
-        \caption{Curvas de acurácia e perda por época da CNN (treino e validação).}
-        \label{fig:cnn_curves}
-    \end{figure}
-
-    \begin{figure}[h]
-        \centering
-        \includegraphics[width=0.9\columnwidth]{confusion_matrix_cnn.png}
-        \caption{Matriz de confusão da CNN no conjunto de validação.}
-        \label{fig:cnn_cm}
-    \end{figure}
-    
-    
-    % -------------------------------------------------------
-    % VI. DISCUSSÃO
-    % -------------------------------------------------------
-    \section{Discussão}
-    Os resultados indicam que o uso de descritores extraídos analiticamente (MFCCs) superou a extração autônoma de atributos espaciais da CNN para a tarefa proposta e as restrições impostas pelo dataset. Como os coeficientes de Mel refletem intimamente a percepção auditiva humana da forma do envelope espectral (timbre geral da faixa), a rede MLP obteve excelentes desempenhos para separar gêneros com instrumentações fundamentais muito dissimilares (como clássico vs metal).
-    
-    Por outro lado, a abordagem CNN sofreu uma restrição crítica: a quantidade de dados. Com apenas cerca de 700 espectrogramas para a fase de treinamento, a rede visual tendeu a se acomodar em \textit{overfitting} precocemente, possuindo informações insuficientes para derivar generalizações universais complexas que descritores de base matemática (como o MFCC) já entregam mastigados para a rede. Ainda assim, é possível notar, por meio das matrizes de erro, que descritores exclusivamente espectrais do MLP podem confundir compassos baseados fortemente em \textit{beats} sobrepostos (como a dificuldade entre \textit{hiphop} e \textit{reggae}), uma área temporal onde arquiteturas convolucionais alimentadas massivamente com dados poderiam se sobressair em trabalhos vindouros.
-    
-    % -------------------------------------------------------
-    % VII. CONCLUSÃO
-    % -------------------------------------------------------
-    \section{Conclusão}
-    Este trabalho comparou duas abordagens para classificação de gênero musical...
-    
-    % -------------------------------------------------------
-    % REFERÊNCIAS
-    % -------------------------------------------------------
-    \begin{thebibliography}{99}
-        
-        \bibitem{tzanetakis2002}
-        TZANETAKIS, G.; COOK, P. Musical genre classification of audio signals.
-        \textit{IEEE Transactions on Speech and Audio Processing}, v. 10, n. 5, p. 293--302, 2002.
-        
-        \bibitem{logan2000}
-        LOGAN, B. Mel Frequency Cepstral Coefficients for Music Modeling. In: \textit{International Symposium on Music Information Retrieval (ISMIR)}, 2000.
-        
-        \bibitem{costa2017}
-        COSTA, Y. M. G.; OLIVEIRA, L. S.; SILLA JR., C. N. An evaluation of convolutional neural networks for music classification using spectrograms. \textit{Applied Soft Computing}, v. 52, p. 28--38, 2017.
-
-        \bibitem{ioffe2015}
-        IOFFE, S.; SZEGEDY, C. Batch normalization: Accelerating deep network training by reducing internal covariate shift. In: \textit{International Conference on Machine Learning (ICML)}, 2015. p. 448--456.
-        
-    \end{thebibliography}
-    
+	
+	\title{Classificação de Gênero Musical com MLP e CNN: Uma Comparação no Dataset GTZAN}
+	
+	\author{
+		\IEEEauthorblockN{
+			Breno Back dos Santos Miranda da Silva (Matrícula: 190063980) \\
+			Leonardo Pereira Côrtes (Matrícula: 200030582) \\
+			Mariana Soares Oliveira (Matrícula: 231013663) \\
+			Matheus de Souza Fernandes (Matrícula: 231025243)
+		}
+		\vspace{0.5em}
+		\IEEEauthorblockA{\textit{Universidade de Brasília}}
+	}
+	
+	\maketitle
+	
+	% -------------------------------------------------------
+	% ABSTRACT (English)
+	% -------------------------------------------------------
+	\renewcommand{\abstractname}{Abstract}
+	\begin{abstract}
+		Automatic music genre classification is increasingly relevant given the growth of streaming platforms and the need to organize large audio catalogs. This paper compares two neural network architectures on the GTZAN dataset: a Multilayer Perceptron (MLP) trained on tabular acoustic features (predominantly MFCCs, complemented by chroma, spectral, zero-crossing-rate and tempo descriptors), and a Convolutional Neural Network (CNN) trained on grayscale spectrogram images. To avoid the data leakage that arises in windowed versions of the dataset, the 30-second version (one clip per track) was adopted, with a stratified 70/15/15 train/validation/test split under the same fixed seed and proportions for both models. Hyperparameters for the MLP were tuned via randomized cross-validated search, while the CNN used a three-block convolutional architecture with early stopping and learning-rate reduction on plateau. The MLP achieved 0.76 validation and 0.77 test accuracy, outperforming the CNN, which reached 0.64 validation and 0.51 test accuracy. Results suggest that, under limited training data (around 700 spectrograms), analytically engineered acoustic descriptors generalize better than features learned end-to-end by a CNN, though the latter shows promise for genres with distinctive rhythmic textures.
+	\end{abstract}
+	
+	\renewcommand{\IEEEkeywordsname}{Keywords}
+	\begin{IEEEkeywords}
+		Music genre classification, GTZAN, MLP, CNN, MFCC, spectrogram.
+	\end{IEEEkeywords}
+	
+	\vspace{1em}
+	
+	% -------------------------------------------------------
+	% RESUMO (Português)
+	% -------------------------------------------------------
+	\renewcommand{\abstractname}{Resumo}
+	\begin{abstract}
+		A classificação automática de gênero musical é cada vez mais relevante diante do crescimento das plataformas de \textit{streaming} e da necessidade de organizar grandes catálogos de áudio. Este artigo compara duas arquiteturas de redes neurais no dataset GTZAN: um \textit{Multilayer Perceptron} (MLP) treinado sobre \textit{features} acústicas tabulares (predominantemente MFCCs, complementadas por descritores de \textit{chroma}, espectrais, de \textit{zero-crossing rate} e de andamento) e uma Rede Neural Convolucional (CNN) treinada sobre espectrogramas em escala de cinza. Para evitar o \textit{data leakage} que surge nas versões do dataset segmentadas em janelas, adotou-se a versão de 30 segundos (uma amostra por faixa), com uma divisão estratificada de 70/15/15 (treino/validação/teste) sob a mesma semente e as mesmas proporções para ambos os modelos. Os hiperparâmetros do MLP foram ajustados por busca aleatória com validação cruzada, enquanto a CNN utilizou uma arquitetura com três blocos convolucionais, \textit{early stopping} e redução da taxa de aprendizado em platôs. O MLP atingiu 0,76 de acurácia na validação e 0,77 no teste, superando a CNN, que alcançou 0,64 na validação e 0,51 no teste. Os resultados sugerem que, sob restrição de dados (cerca de 700 espectrogramas de treino), descritores acústicos projetados analiticamente generalizam melhor do que atributos aprendidos de ponta a ponta por uma CNN, embora esta última mostre potencial para gêneros com texturas rítmicas mais distintivas.
+	\end{abstract}
+	
+	\renewcommand{\IEEEkeywordsname}{Palavras-chave}
+	\begin{IEEEkeywords}
+		Classificação de gênero musical, GTZAN, MLP, CNN, MFCC, espectrograma.
+	\end{IEEEkeywords}
+	
+	% -------------------------------------------------------
+	% I. INTRODUÇÃO
+	% -------------------------------------------------------
+	\section{Introdução}
+	
+	A classificação automática de gênero musical é uma tarefa cada vez mais importante devido ao crescimento das plataformas de \textit{streaming} e à necessidade de organizar grandes catálogos de áudio. No entanto, classificar músicas por gênero é um desafio prático, pois os estilos musicais são conceitos bastante subjetivos. Músicas de um mesmo estilo podem soar de formas muito diferentes (devido à alta variabilidade intra-gênero), e gêneros distintos podem compartilhar características acústicas parecidas, dificultando a separação das categorias.
+	
+	O objetivo deste artigo é comparar o desempenho de duas redes neurais diferentes na classificação de gêneros musicais, utilizando o dataset GTZAN~\cite{tzanetakis2002}. A primeira abordagem utiliza dados tabulares com as características acústicas do áudio para treinar um \textit{Multilayer Perceptron} (MLP). Já a segunda abordagem utiliza os espectrogramas das músicas, tratando o problema como uma tarefa de visão computacional para treinar uma Rede Neural Convolucional (CNN). Com isso, o trabalho busca avaliar qual formato de entrada e arquitetura apresenta os melhores resultados.
+	
+	O artigo está organizado da seguinte forma: a Seção II apresenta trabalhos relacionados na área; a Seção III descreve o dataset e os métodos de pré-processamento aplicados; a Seção IV detalha a construção dos modelos MLP e CNN; a Seção V mostra os resultados alcançados; a Seção VI discute o desempenho das abordagens; a Seção VII apresenta as ameaças à validade do estudo e, por fim, a Seção VIII finaliza o artigo com a conclusão.
+	
+	% -------------------------------------------------------
+	% II. TRABALHOS RELACIONADOS
+	% -------------------------------------------------------
+	\section{Trabalhos Relacionados}
+	Diversos estudos exploraram a classificação de gênero musical utilizando diferentes representações de entrada. Para a extração de características acústicas tabulares, os coeficientes MFCC (\textit{Mel-Frequency Cepstral Coefficients}) são amplamente consolidados na literatura de processamento de áudio. Logan~\cite{logan2000} demonstrou a eficácia dos MFCCs para a modelagem musical, destacando sua capacidade de capturar a envoltória espectral do som de forma análoga à percepção auditiva humana, tornando-se o padrão de entrada para redes como o \textit{Multilayer Perceptron} (MLP) em tarefas de áudio.
+	
+	Na abordagem visual, Costa et al.~\cite{costa2017} avaliaram redes neurais convolucionais aplicadas a espectrogramas para classificação musical, demonstrando que tratar o áudio como uma imagem e delegar a extração de características à própria rede pode superar descritores acústicos projetados manualmente. O presente trabalho segue essa linha na abordagem CNN e a contrasta diretamente com um modelo tabular (MLP) treinado sobre descritores acústicos, predominantemente MFCCs.
+	
+	Cabe ressaltar que o próprio GTZAN possui limitações documentadas. Sturm~\cite{sturm2013} catalogou repetições, faixas mal rotuladas e distorções no dataset, além de discutir como divisões inadequadas podem comprometer a validade das avaliações, o que reforça a importância dos cuidados de particionamento adotados neste trabalho.
+	
+	% -------------------------------------------------------
+	% III. DATASET E PRÉ-PROCESSAMENTO
+	% -------------------------------------------------------
+	\section{Dataset e Pré-processamento}
+	
+	\subsection{GTZAN Dataset}
+	
+	Os experimentos deste projeto utilizaram o dataset GTZAN~\cite{tzanetakis2002}, um dos bancos de dados mais conhecidos para pesquisas em processamento de áudio. O conjunto contém 1000 clipes, distribuídos igualmente em 10 gêneros musicais (100 amostras por categoria). Cada arquivo de áudio possui 30 segundos de duração.
+	
+	\subsection{Divisão dos Dados}
+	
+	O GTZAN apresenta um risco conhecido de \textit{data leakage} (vazamento de dados) quando se utiliza a versão do dataset em que cada faixa é recortada em múltiplas janelas curtas (por exemplo, segmentos de 3 segundos): janelas de uma mesma música podem cair simultaneamente em treino e teste, fazendo a rede memorizar faixas em vez de aprender padrões de gênero e inflando artificialmente a acurácia (frequentemente para mais de 90\%).
+	
+	Para eliminar esse risco por construção, optou-se pela versão de 30 segundos do dataset, na qual há \textbf{exatamente uma amostra por faixa} (1000 faixas, 100 por gênero). Sobre esses dados aplicou-se um \textit{split} estratificado por gênero com semente aleatória fixa (\texttt{random\_state=42}), na proporção de 70\% para treinamento, 15\% para validação e 15\% para teste.
+	
+	\subsection{Pré-processamento Tabular}
+	
+	Para alimentar a rede MLP, foram utilizadas 57 \textit{features} acústicas pré-extraídas. Destas, 40 são coeficientes MFCC (média e variância dos 20 coeficientes), e as demais capturam informação complementar de \textit{chroma}, energia (RMS), forma espectral (centroide, largura de banda e \textit{rolloff}), taxa de cruzamentos por zero e andamento (\textit{tempo}). Colunas que não agregam informação para a classificação computacional, como o nome do arquivo e a duração da faixa, foram removidas.
+	
+	A normalização dos valores foi feita com a função \texttt{StandardScaler}. Para garantir que dados do futuro não influenciassem o aprendizado, o escalonador foi ajustado (\texttt{fit}) exclusivamente com o conjunto de treino. Só então a transformação foi aplicada para colocar os conjuntos de validação e teste na mesma escala.
+	
+	\subsection{Pré-processamento de Imagens}
+	
+	Na abordagem com a CNN, os dados de entrada foram os espectrogramas das músicas originais. Para adequar as imagens ao modelo e otimizar o processamento, elas foram convertidas para escala de cinza e redimensionadas para a resolução de $128 \times 128$ pixels.
+	
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=\columnwidth]{rock00099.png}
+		\caption{Exemplo de espectrograma de uma música do gênero \textit{rock}, utilizado como entrada da CNN.}
+		\label{fig:espectogram_rock}
+	\end{figure}
+	
+	Os valores dos pixels foram normalizados, sendo divididos por 255.0 para que ficassem no intervalo entre 0 e 1. Para garantir uma comparação justa entre os dois modelos, aplicou-se às imagens o mesmo protocolo de divisão: \textit{split} estratificado por gênero, mesmas proporções (70/15/15) e mesma semente (\texttt{random\_state=42}). O conjunto de imagens contém 999 espectrogramas, pois um arquivo do gênero \textit{jazz} está corrompido no GTZAN e foi descartado. Assim, os \textit{splits} das imagens e dos dados tabulares são independentes e as partições não coincidem faixa a faixa. A comparação, portanto, avalia a capacidade de generalização de cada arquitetura sob condições equivalentes, embora não utilize exatamente as mesmas amostras de teste.
+	
+	
+	% -------------------------------------------------------
+	% IV. METODOLOGIA
+	% -------------------------------------------------------
+	\section{Metodologia}
+	
+	\subsection{Modelo Tabular - MLP}
+	A abordagem tabular foi desenvolvida utilizando a biblioteca \texttt{scikit-learn}. A arquitetura do \textit{Multilayer Perceptron} (MLP) baseou-se diretamente nas \textit{features} acústicas tabulares descritas na Seção III. Para encontrar a arquitetura ideal e mitigar os efeitos de \textit{overfitting}, foi implementada uma busca de hiperparâmetros utilizando a técnica \texttt{RandomizedSearchCV} com validação cruzada estratificada (cv=5) e 20 iterações. O espaço de busca abrangeu variações na topologia da rede (de uma a três camadas ocultas), funções de ativação (ReLU e Tanh), taxa de aprendizado inicial e o fator de regularização L2 (\textit{alpha}).
+	
+	A configuração de melhor desempenho consistiu em uma arquitetura enxuta, possuindo uma única camada oculta com 128 neurônios, função de ativação ReLU, taxa de aprendizado inicial de 0,01 e um termo de regularização \textit{alpha} de 0,0001, operando sob o otimizador Adam. Além da simplicidade arquitetural, a técnica de \textit{Early Stopping} foi fundamental: o treinamento foi configurado para ser interrompido caso a perda (\textit{loss}) no conjunto de validação não apresentasse melhora por 20 épocas consecutivas. Essa estratégia demonstrou-se altamente eficaz para interromper o aprendizado antes que a rede passasse a memorizar os dados de treino, favorecendo a generalização.
+	
+	\subsection{Modelo Visual - CNN}
+	A rede convolucional foi implementada em Keras e recebe como entrada os espectrogramas em escala de cinza de dimensão $128 \times 128 \times 1$. A arquitetura é composta por três blocos convolucionais seguidos de uma cabeça de classificação densa.
+	
+	Cada bloco convolucional contém uma camada \texttt{Conv2D} com filtros $3 \times 3$ e ativação ReLU (com \textit{padding} do tipo \textit{same}, que preserva a dimensão espacial), seguida de \texttt{MaxPooling2D} $2 \times 2$ e \texttt{Dropout} de 0,25. O número de filtros cresce a cada bloco (32, 64 e 128), permitindo que a rede aprenda uma hierarquia de padrões: das texturas locais do espectrograma, nos primeiros blocos, a padrões mais abstratos nos blocos finais. O \textit{pooling} reduz progressivamente a resolução (de 128 para 16) e agrega invariância a pequenos deslocamentos, enquanto o \textit{dropout} atua como regularização, importante dado o número reduzido de amostras de treino.
+	
+	Após os blocos convolucionais, os mapas de características são achatados (\texttt{Flatten}) e processados por uma camada \texttt{Dense} de 256 neurônios com ativação ReLU, um \texttt{Dropout} mais agressivo de 0,5 e, por fim, uma camada \texttt{Dense} de 10 neurônios com ativação \textit{softmax}, que produz a distribuição de probabilidade sobre os gêneros.
+	
+	O treinamento utilizou o otimizador Adam (\textit{learning rate} inicial de $10^{-3}$) e a função de perda \textit{sparse categorical crossentropy}, com \textit{batches} de 32 amostras por até 50 épocas. Dois \textit{callbacks} controlaram o processo: o \textit{EarlyStopping} (monitorando a acurácia de validação, com paciência de 10 épocas e restauração dos melhores pesos), para conter o \textit{overfitting}, e o \textit{ReduceLROnPlateau} (reduzindo o \textit{learning rate} pela metade após 5 épocas sem melhora na perda de validação), permitindo um ajuste mais fino na fase final do treino.
+	
+	\textbf{Sobre a normalização em lote.} A arquitetura originalmente proposta incluía uma camada de \textit{Batch Normalization}~\cite{ioffe2015} após cada convolução. Na prática, entretanto, essa configuração fez o treinamento estagnar em acurácia equivalente ao acaso ($\approx 10\%$ para dez classes). Uma hipótese para esse comportamento remete a uma limitação da técnica em cenários de poucos dados: as estatísticas móveis de média e variância usadas na inferência podem não estabilizar adequadamente, fazendo a normalização aplicada na validação divergir da aplicada no treino. Independentemente da causa exata, a remoção das camadas de \textit{Batch Normalization}, mantendo o restante da arquitetura, foi suficiente para estabilizar o treinamento e alcançar os resultados reportados.
+	
+	% -------------------------------------------------------
+	% V. RESULTADOS
+	% -------------------------------------------------------
+	\section{Resultados}
+	
+	A Tabela~\ref{tab:resultados} apresenta a acurácia global dos dois modelos desenvolvidos. 
+	
+	Em relação à abordagem tabular, o modelo MLP apresentou um treinamento estável e eficiente. A Figura~\ref{fig:mlp_curves} ilustra a queda acentuada da função de custo (\textit{loss}) de treinamento e a ascensão da acurácia de validação, que atingiu seu ápice próximo à 20ª época (cerca de 70\% na validação interna usada pelo \textit{early stopping}, correspondente a uma partição de 10\% do treino, distinta, portanto, do conjunto de validação de 150 amostras reportado na Tabela~\ref{tab:resultados}). O mecanismo de \textit{Early Stopping} interrompeu o treinamento em torno da 32ª época, garantindo que o modelo retivesse sua capacidade de generalização máxima antes de apresentar sobreajuste severo. A análise da Figura~\ref{fig:mlp_cm} reforça a precisão da rede: gêneros com assinaturas acústicas peculiares, como \textit{classical} e \textit{jazz}, foram amplamente reconhecidos, chegando a 100\% de acertos no caso da música clássica. As maiores sobreposições ocorreram entre \textit{hiphop} e \textit{reggae} (4 falsos preditivos), e \textit{rock} e \textit{disco} (3 falsos preditivos), evidenciando a limitação dos descritores tabulares em discernir certos padrões rítmicos percussivos semelhantes.
+	
+	A CNN atingiu 0,64 de acurácia na validação e 0,51 no teste. A Figura~\ref{fig:cnn_curves} apresenta as curvas de treinamento, nas quais se observam a convergência estável do modelo e um leve \textit{overfitting} a partir da vigésima época, comportamento esperado dado o tamanho reduzido do conjunto de treino. A Figura~\ref{fig:cnn_cm} mostra a matriz de confusão na validação: o gênero \textit{metal} foi o mais bem classificado (F1 de 0,93), seguido de \textit{classical} e \textit{hiphop} (ambos com F1 de 0,80), enquanto \textit{rock} e \textit{country} concentraram os maiores erros (F1 de 0,32 e 0,50, respectivamente), refletindo a maior sobreposição de suas características com as dos demais gêneros.
+	
+	\begin{table}[htbp]
+		\centering
+		\caption{Acurácia nos conjuntos de Validação e Teste}
+		\label{tab:resultados}
+		\begin{tabular}{lcc}
+			\toprule
+			\textbf{Modelo} & \textbf{Acurácia (val)} & \textbf{Acurácia (teste)} \\
+			\midrule
+			MLP  & 0,76 & 0,77 \\
+			CNN  & 0,64 & 0,51 \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=\columnwidth]{mlp_training_curves.png}
+		\caption{Curvas de perda (treino) e acurácia (validação) por época para o modelo tabular MLP.}
+		\label{fig:mlp_curves}
+	\end{figure}
+	
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=0.9\columnwidth]{confusion_matrix_mlp.png}
+		\caption{Matriz de confusão do MLP no conjunto de validação.}
+		\label{fig:mlp_cm}
+	\end{figure}
+	
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=\columnwidth]{cnn_training_curves.png}
+		\caption{Curvas de acurácia e perda por época da CNN (treino e validação).}
+		\label{fig:cnn_curves}
+	\end{figure}
+	
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=0.9\columnwidth]{confusion_matrix_cnn.png}
+		\caption{Matriz de confusão da CNN no conjunto de validação.}
+		\label{fig:cnn_cm}
+	\end{figure}
+	
+	\FloatBarrier
+	
+	\subsection{Análise por Gênero}
+	
+	A Tabela~\ref{tab:f1_genero} consolida o \textit{F1-score} por gênero de ambos os modelos no conjunto de validação, permitindo uma comparação mais fina do que a acurácia global. O dado mais relevante é que os dois modelos falham em gêneros distintos e complementares. O MLP domina na maioria das categorias, com destaque para as de instrumentação e timbre bem definidos (\textit{classical} (1,00), \textit{country} (0,90) e \textit{jazz} (0,90)), coerente com a capacidade dos MFCCs de descrever o envelope espectral.
+	
+	Em contrapartida, a CNN supera o MLP justamente nos dois gêneros de assinatura rítmica e textural mais marcada: \textit{metal} (0,93 contra 0,77) e \textit{hiphop} (0,80 contra 0,65). Esse resultado dá sustentação empírica à hipótese de que as representações visuais capturam padrões rítmico-texturais que os descritores acústicos, isoladamente, não expressam plenamente. Nos demais oito gêneros o MLP prevalece, o que explica sua vantagem na acurácia global, mas a complementaridade observada nos dois gêneros percussivos reforça, com base em dados, a proposta de um modelo híbrido discutida na Seção~\ref{sec:conclusao}.
+	
+	\begin{table}[htbp]
+		\centering
+		\caption{F1-score por gênero no conjunto de validação (MLP vs. CNN)}
+		\label{tab:f1_genero}
+		\begin{tabular}{lcc}
+			\toprule
+			\textbf{Gênero} & \textbf{F1 (MLP)} & \textbf{F1 (CNN)} \\
+			\midrule
+			blues     & 0,81 & 0,59 \\
+			classical & 1,00 & 0,80 \\
+			country   & 0,90 & 0,50 \\
+			disco     & 0,65 & 0,52 \\
+			hiphop    & 0,65 & \textbf{0,80} \\
+			jazz      & 0,90 & 0,62 \\
+			metal     & 0,77 & \textbf{0,93} \\
+			pop       & 0,80 & 0,71 \\
+			reggae    & 0,67 & 0,62 \\
+			rock      & 0,62 & 0,32 \\
+			\midrule
+			\textit{macro avg} & 0,78 & 0,64 \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	% -------------------------------------------------------
+	% VI. DISCUSSÃO
+	% -------------------------------------------------------
+	\section{Discussão}
+	Os resultados indicam que o uso de descritores extraídos analiticamente (MFCCs) superou a extração autônoma de atributos espaciais da CNN para a tarefa proposta e as restrições impostas pelo dataset. Como os coeficientes de Mel refletem intimamente a percepção auditiva humana da forma do envelope espectral (timbre geral da faixa), a rede MLP obteve excelentes desempenhos para separar gêneros com instrumentações fundamentais muito dissimilares (como clássico vs metal).
+	
+	Por outro lado, a abordagem CNN sofreu uma restrição crítica: a quantidade de dados. Com apenas cerca de 700 espectrogramas para a fase de treinamento, a rede visual tendeu a se acomodar em \textit{overfitting} precocemente, possuindo informações insuficientes para derivar generalizações universais complexas que descritores de base matemática (como o MFCC) fornecem uma representação mais informativa a rede. Ainda assim, é possível notar, por meio das matrizes de erro, que descritores exclusivamente espectrais do MLP podem confundir compassos baseados fortemente em \textit{beats} sobrepostos (como a dificuldade entre \textit{hiphop} e \textit{reggae}), uma área temporal onde arquiteturas convolucionais alimentadas massivamente com dados poderiam se sobressair em trabalhos vindouros.
+	
+	% -------------------------------------------------------
+	% VII. AMEAÇAS À VALIDADE
+	% -------------------------------------------------------
+	\section{Ameaças à Validade}
+	
+	Alguns fatores limitam a generalização dos resultados aqui reportados e devem ser considerados na interpretação das conclusões.
+	
+	\textit{Semente única.} Os desempenhos foram medidos sobre uma única partição estratificada e uma única semente aleatória. Com conjuntos de validação e teste de 150 amostras, pequenas variações na partição podem deslocar a acurácia de forma não desprezível; uma avaliação com múltiplas sementes, reportando média e desvio-padrão, seria necessária para quantificar essa variância.
+	
+	\textit{Comparação não pareada.} Por conter uma imagem a menos (999 contra 1000 amostras tabulares), o \textit{split} das imagens é independente do tabular. Assim, os conjuntos de teste dos dois modelos não são compostos exatamente pelas mesmas faixas, o que permite comparar a generalização de cada arquitetura, mas não realizar testes estatísticos pareados entre elas.
+	
+	\textit{Seleção de modelo em conjunto pequeno.} O \textit{early stopping} da CNN seleciona pesos com base na acurácia de um conjunto de validação de 150 amostras. A diferença observada entre validação (0,64) e teste (0,51) sugere que essa seleção é sensível a ruído, tendendo a superestimar o desempenho na validação.
+	
+	\textit{Limitações do dataset.} O GTZAN possui falhas documentadas na literatura~\cite{sturm2013}, incluindo faixas repetidas, rótulos incorretos e distorções, que impõem um teto à acurácia alcançável e podem afetar diferentemente cada abordagem.
+	
+	% -------------------------------------------------------
+	% VIII. CONCLUSÃO
+	% -------------------------------------------------------
+	\section{Conclusão}
+	\label{sec:conclusao}
+	Este trabalho comparou duas abordagens para a classificação de gênero musical no dataset GTZAN: um MLP treinado sobre descritores acústicos tabulares (predominantemente MFCCs) e uma CNN treinada diretamente sobre espectrogramas. Os cuidados metodológicos adotados (escolha da versão de 30 segundos do dataset para eliminar o risco de \textit{data leakage}, ajuste de escalonadores exclusivamente no conjunto de treino e aplicação do mesmo protocolo de \textit{split} (semente e proporções idênticas) às duas modalidades) garantiram que a comparação entre as arquiteturas fosse justa e os resultados, confiáveis.
+	
+	O modelo MLP apresentou o melhor desempenho geral, atingindo 0,77 de acurácia no teste, contra 0,51 da CNN. Esse resultado indica que, no regime de poucos dados do GTZAN (cerca de 700 amostras de treino), descritores acústicos projetados manualmente, como os MFCCs, ainda oferecem uma representação mais robusta e generalizável do que atributos aprendidos automaticamente por uma rede convolucional a partir de imagens. A tentativa de incluir \textit{Batch Normalization} na CNN, que degradou o treinamento a um desempenho equivalente ao acaso, reforça como técnicas de regularização amplamente eficazes em cenários de big data podem se tornar contraproducentes quando o volume de dados é limitado.
+	
+	Ainda assim, a CNN não foi inferior em todos os aspectos: ela reconheceu com grande precisão gêneros como \textit{metal} (F1 de 0,93), sugerindo que representações visuais podem capturar padrões rítmicos e texturais que os MFCCs, por si só, não expressam plenamente, como evidenciado pela confusão persistente do MLP entre \textit{hiphop} e \textit{reggae}.
+	
+	Como trabalhos futuros, sugere-se: (i) o uso de técnicas de \textit{data augmentation} em espectrogramas (deslocamento temporal, \textit{time/frequency masking}) para mitigar a limitação de dados da CNN; (ii) a exploração de modelos híbridos que combinem descritores tabulares e representações visuais; e (iii) o uso de arquiteturas recorrentes ou baseadas em atenção, capazes de capturar melhor a estrutura temporal do áudio, endereçando as confusões rítmicas identificadas neste estudo.
+	
+	% -------------------------------------------------------
+	% REFERÊNCIAS
+	% -------------------------------------------------------
+	\begin{thebibliography}{99}
+		
+		\bibitem{tzanetakis2002}
+		TZANETAKIS, G.; COOK, P. Musical genre classification of audio signals.
+		\textit{IEEE Transactions on Speech and Audio Processing}, v. 10, n. 5, p. 293--302, 2002.
+		
+		\bibitem{logan2000}
+		LOGAN, B. Mel Frequency Cepstral Coefficients for Music Modeling. In: \textit{International Symposium on Music Information Retrieval (ISMIR)}, 2000.
+		
+		\bibitem{costa2017}
+		COSTA, Y. M. G.; OLIVEIRA, L. S.; SILLA JR., C. N. An evaluation of convolutional neural networks for music classification using spectrograms. \textit{Applied Soft Computing}, v. 52, p. 28--38, 2017.
+		
+		\bibitem{ioffe2015}
+		IOFFE, S.; SZEGEDY, C. Batch normalization: Accelerating deep network training by reducing internal covariate shift. In: \textit{International Conference on Machine Learning (ICML)}, 2015. p. 448--456.
+		
+		\bibitem{sturm2013}
+		STURM, B. L. The GTZAN dataset: Its contents, its faults, their effects on evaluation, and its future use. \textit{arXiv preprint arXiv:1306.1461}, 2013.
+		
+	\end{thebibliography}
+	
 \end{document}
